@@ -1,0 +1,7 @@
+# STS settings
+Sts.Role: arn:aws:iam::610547539895:role/admin
+Stack.Template: templates/stack.yml.j2
+
+Stack.Inputs.FullyQualifiedDomainName: react-slingshot.callowayart.com
+Stack.Inputs.DomainName: callowayart.com
+Stack.Inputs.AcmCertificateArn: arn:aws:acm:us-east-1:610547539895:certificate/fd76420a-9b3c-4ed0-ac33-08503da1c751

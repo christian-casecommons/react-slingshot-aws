@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: React Slingshot Demo
+
+Mappings:
+  Constants:
+    Globals:
+      S3DN: s3-website-us-west-2.amazonaws.com
+      S3HostedZoneId: Z3BJ6K6RIION7M
+
+Parameters:
+  DomainName:
+    Type: String
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+  FullyQualifiedDomainName:
+    Type: String
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+  AcmCertificateArn:
+    Type: String
+
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Ref: FullyQualifiedDomainName
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+    DeletionPolicy: Delete
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: SiteBucket
+      PolicyDocument:
+        Statement:
+        - Sid: PublicReadForGetBucketObjects
+          Effect: Allow
+          Principal: '*'
+          Action: s3:GetObject
+          Resource:
+            Fn::Join:
+              - ""
+              - - "arn:aws:s3:::"
+                - Ref: SiteBucket
+                - "/*"
+  SiteDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName:
+        Fn::Join:
+          - ""
+          - - Ref: DomainName
+            - "."
+      RecordSets:
+      - Name:
+          Ref: FullyQualifiedDomainName
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+          - Fn::GetAtt: [ SiteCloudfront, DomainName ]
+
+  SiteCloudfront:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+    - SiteBucket
+    Properties:
+      DistributionConfig:
+        Comment: Cloudfront Distribution serving react slingshot demo
+        Origins:
+        - DomainName:
+            Fn::Join:
+              - "."
+              - - Ref: FullyQualifiedDomainName
+                - Fn::FindInMap: [ Constants, Globals, S3DN ]
+          Id: S3Origin
+          CustomOriginConfig:
+            HTTPPort: '80'
+            HTTPSPort: '443'
+            OriginProtocolPolicy: http-only
+        Enabled: true
+        HttpVersion: 'http2'
+        DefaultRootObject: index.html
+        Aliases:
+          - Ref: FullyQualifiedDomainName
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - GET
+          - HEAD
+          Compress: true
+          TargetOriginId: S3Origin
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_All
+        ViewerCertificate:
+          AcmCertificateArn:
+            Ref: AcmCertificateArn
+          SslSupportMethod: sni-only

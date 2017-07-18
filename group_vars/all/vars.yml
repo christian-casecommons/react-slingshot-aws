@@ -1,0 +1,20 @@
+---
+Sts.Region: us-west-2
+
+Stack.Name: react-slingshot
+Stack.Description: "An example of using infrastructure tool to deploy a static app"
+Stack.Tags:
+  org:business:owner: Casecommons
+  org:business:product: React Slingshot
+  org:business:severity: High
+  org:tech:environment: "{{ env }}"
+  org:tech:contact: christian@casecommons.org
+
+Stack.Policy:
+  Statement:
+  - Effect: "Deny"
+    Action: "Update:*"
+    Principal: "*"
+    Resource: "*"
+
+Stack.Inputs.MyStackInput: "{{ 1000 }}"
